@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0a0f29;
+  --card: #12162b;
+  --card-ai: #0d1122;
+  --border: rgba(92, 77, 255, 0.25);
+  --border-ai: #5c4dff;
+  --text: #f9fafb;
+  --text-muted: #a0a0a0;
+  --accent: #5c4dff;
+  --accent-2: #00cffd;
+  --buy: #00ff7f;
+  --sell: #ff4500;
+  --hold: #888888;
+}
+
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer-slide 1.2s ease-in-out infinite;
+}
+
+.hud-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background: radial-gradient(ellipse 90% 55% at 50% -15%, rgba(92, 77, 255, 0.28), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 95% 30%, rgba(0, 207, 253, 0.12), transparent 50%),
+    radial-gradient(ellipse 45% 35% at 5% 70%, rgba(92, 77, 255, 0.1), transparent 45%), var(--bg);
+}
+
+.hud-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(rgba(0, 207, 253, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 207, 253, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 75% 75% at 50% 40%, black 15%, transparent 70%);
+  pointer-events: none;
+}
+
+.hud-header {
+  background: rgba(10, 15, 41, 0.72);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border-bottom: 1px solid rgba(0, 207, 253, 0.15);
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.35), 0 0 40px -10px rgba(92, 77, 255, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.hud-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 207, 253, 0.16);
+  background: rgba(18, 22, 43, 0.86);
+  backdrop-filter: blur(14px) saturate(1.1);
+  box-shadow: 0 0 0 1px rgba(92, 77, 255, 0.1), 0 8px 40px rgba(0, 0, 0, 0.4),
+    0 0 56px -14px rgba(92, 77, 255, 0.3), inset 0 1px 0 rgba(0, 207, 253, 0.1);
+}
+
+.hud-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 207, 253, 0.35) 25%,
+    rgba(92, 77, 255, 0.65) 50%,
+    rgba(0, 207, 253, 0.35) 75%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.hud-panel-soft {
+  border-radius: 1rem;
+  border: 1px solid rgba(92, 77, 255, 0.14);
+  background: rgba(18, 22, 43, 0.65);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.2), 0 0 32px -12px rgba(92, 77, 255, 0.2);
+}
+
+.hud-field {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0, 207, 253, 0.14);
+  background: rgba(10, 15, 41, 0.55);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hud-field:hover {
+  border-color: rgba(92, 77, 255, 0.35);
+  box-shadow: 0 0 20px -8px rgba(92, 77, 255, 0.35);
+}
+
+.hud-field:focus-within {
+  border-color: rgba(0, 207, 253, 0.45);
+  box-shadow: 0 0 0 1px rgba(0, 207, 253, 0.2), 0 0 24px -8px rgba(0, 207, 253, 0.25);
+}
+
+.hud-cta {
+  border-radius: 0.5rem;
+  background: linear-gradient(105deg, var(--accent) 0%, #4338ca 48%, var(--accent-2) 100%);
+  background-size: 200% 100%;
+  box-shadow: 0 0 24px rgba(92, 77, 255, 0.45), 0 0 40px -12px rgba(0, 207, 253, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: filter 0.2s ease, transform 0.15s ease, background-position 0.4s ease;
+}
+
+.hud-cta:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background-position: 100% 0;
+}
+
+.hud-cta:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.hud-ai-shell {
+  border-radius: 1rem;
+  border: 1px solid rgba(92, 77, 255, 0.45);
+  background: linear-gradient(165deg, rgba(13, 17, 34, 0.95) 0%, rgba(18, 22, 43, 0.92) 100%);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 0 0 1px rgba(0, 207, 253, 0.12), 0 0 48px -8px rgba(92, 77, 255, 0.35),
+    inset 0 1px 0 rgba(0, 207, 253, 0.15);
+}
+
+.hud-logo-ring {
+  animation: hud-pulse-ring 3s ease-in-out infinite;
+}
+
+@keyframes hud-pulse-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(92, 77, 255, 0.4), 0 0 40px -8px rgba(0, 207, 253, 0.25),
+      inset 0 0 12px rgba(255, 255, 255, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(0, 207, 253, 0.45), 0 0 56px -8px rgba(92, 77, 255, 0.35),
+      inset 0 0 16px rgba(255, 255, 255, 0.1);
+  }
+}
+
+.hud-label {
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: rgba(0, 207, 253, 0.68);
+}
+
+.font-display {
+  font-family: var(--font-orbitron), system-ui, sans-serif;
+}
+
+.font-ui {
+  font-family: var(--font-outfit), system-ui, sans-serif;
+}
+
+.font-data {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-outfit), system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(0, 207, 253, 0.28);
+  color: var(--text);
+}
