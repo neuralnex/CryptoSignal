@@ -5,11 +5,13 @@ import {
   averageVolume,
   bollinger20,
   emaSeries,
+  findSwingHighs,
+  findSwingLows,
   macdSeries,
   rsi14Wilder,
 } from "./indicators";
 import { intervalDurationMs, type ChartInterval } from "./intervals";
-import type { IndicatorSnapshot, OHLCV } from "./types";
+import type { IndicatorSnapshot, OHLCV, QmlIboAnalysis, QmlSideAnalysis } from "./types";
 
 export function buildIndicatorSnapshot(rows: BinanceKline[], timeframe: ChartInterval): IndicatorSnapshot {
   const ohlcv: OHLCV[] = klinesToOHLCV(rows);
@@ -72,5 +74,171 @@ export function buildIndicatorSnapshot(rows: BinanceKline[], timeframe: ChartInt
     );
   }
 
+  snap.qmlIbo = computeQmlIbo(ohlcv, snap.atr14);
+
   return snap;
+}
+
+/* ------------------------------------------------------------------ */
+/*  QML-IBO Smart Liquidity Reversal structural scanner                */
+/* ------------------------------------------------------------------ */
+
+const QML_SIDE_DEFAULT: QmlSideAnalysis = {
+  iboActive: false,
+  pivotDetected: false,
+  pivotLevel: 0,
+  qmlZoneHigh: 0,
+  qmlZoneLow: 0,
+  bos: false,
+  liquiditySweep: false,
+  structureShift: false,
+  priceInZone: false,
+  valid: false,
+};
+
+function computeQmlIbo(ohlcv: OHLCV[], atr: number): QmlIboAnalysis {
+  const swingHighs = findSwingHighs(ohlcv);
+  const swingLows = findSwingLows(ohlcv);
+  const n = ohlcv.length - 1;
+  const last = ohlcv[n];
+  const prev = ohlcv[n - 1];
+
+  return {
+    swingHighCount: swingHighs.length,
+    swingLowCount: swingLows.length,
+    bearish: computeBearish(ohlcv, swingHighs, swingLows, atr, last, prev, n),
+    bullish: computeBullish(ohlcv, swingHighs, swingLows, atr, last, prev, n),
+  };
+}
+
+/**
+ * Bearish QML-IBO (SELL setup).
+ *
+ * Sequence: previous swing-high (SH1) → pullback swing-low (origin) → Higher
+ * High (HH sweeps SH1 liquidity) → Break of Structure down (low < origin) →
+ * internal bearish orderflow → price retraces into QML zone → SELL.
+ */
+function computeBearish(
+  ohlcv: OHLCV[],
+  swingHighs: { idx: number; value: number }[],
+  swingLows: { idx: number; value: number }[],
+  atr: number,
+  last: OHLCV,
+  prev: OHLCV,
+  n: number,
+): QmlSideAnalysis {
+  const side: QmlSideAnalysis = { ...QML_SIDE_DEFAULT };
+  if (swingHighs.length < 2 || swingLows.length < 1) return side;
+
+  const sh2 = swingHighs[swingHighs.length - 1];
+  const sh1 = swingHighs[swingHighs.length - 2];
+
+  side.pivotDetected = sh2.value > sh1.value;
+  side.pivotLevel = sh2.value;
+  if (!side.pivotDetected) return side;
+
+  let originIdx = -1;
+  for (let i = swingLows.length - 1; i >= 0; i--) {
+    if (swingLows[i].idx < sh2.idx && swingLows[i].idx > sh1.idx) {
+      originIdx = i;
+      break;
+    }
+  }
+  if (originIdx === -1) {
+    for (let i = swingLows.length - 1; i >= 0; i--) {
+      if (swingLows[i].idx < sh2.idx) { originIdx = i; break; }
+    }
+  }
+  if (originIdx < 0) return side;
+
+  const origin = swingLows[originIdx];
+  const zoneBuffer = atr * 0.15;
+  side.qmlZoneLow = ohlcv[origin.idx].l - zoneBuffer;
+  side.qmlZoneHigh = ohlcv[origin.idx].h + zoneBuffer;
+
+  for (let i = sh2.idx + 1; i <= n; i++) {
+    if (ohlcv[i].l < origin.value) { side.bos = true; break; }
+  }
+
+  side.liquiditySweep = sh2.value > sh1.value * 1.001;
+
+  side.iboActive = last.h < prev.h && last.l < prev.l;
+  side.structureShift = last.l < prev.l;
+  side.priceInZone = last.c >= side.qmlZoneLow && last.c <= side.qmlZoneHigh;
+
+  side.valid =
+    side.iboActive &&
+    side.pivotDetected &&
+    side.bos &&
+    side.liquiditySweep &&
+    side.structureShift &&
+    side.priceInZone;
+
+  return side;
+}
+
+/**
+ * Bullish QML-IBO (BUY setup — mirror of bearish).
+ *
+ * Sequence: previous swing-low (SL1) → pullback swing-high (origin) → Lower
+ * Low (LL sweeps SL1 liquidity) → Break of Structure up (high > origin) →
+ * internal bullish orderflow → price retraces into QML zone → BUY.
+ */
+function computeBullish(
+  ohlcv: OHLCV[],
+  swingHighs: { idx: number; value: number }[],
+  swingLows: { idx: number; value: number }[],
+  atr: number,
+  last: OHLCV,
+  prev: OHLCV,
+  n: number,
+): QmlSideAnalysis {
+  const side: QmlSideAnalysis = { ...QML_SIDE_DEFAULT };
+  if (swingLows.length < 2 || swingHighs.length < 1) return side;
+
+  const sl2 = swingLows[swingLows.length - 1];
+  const sl1 = swingLows[swingLows.length - 2];
+
+  side.pivotDetected = sl2.value < sl1.value;
+  side.pivotLevel = sl2.value;
+  if (!side.pivotDetected) return side;
+
+  let originIdx = -1;
+  for (let i = swingHighs.length - 1; i >= 0; i--) {
+    if (swingHighs[i].idx < sl2.idx && swingHighs[i].idx > sl1.idx) {
+      originIdx = i;
+      break;
+    }
+  }
+  if (originIdx === -1) {
+    for (let i = swingHighs.length - 1; i >= 0; i--) {
+      if (swingHighs[i].idx < sl2.idx) { originIdx = i; break; }
+    }
+  }
+  if (originIdx < 0) return side;
+
+  const origin = swingHighs[originIdx];
+  const zoneBuffer = atr * 0.15;
+  side.qmlZoneLow = ohlcv[origin.idx].l - zoneBuffer;
+  side.qmlZoneHigh = ohlcv[origin.idx].h + zoneBuffer;
+
+  for (let i = sl2.idx + 1; i <= n; i++) {
+    if (ohlcv[i].h > origin.value) { side.bos = true; break; }
+  }
+
+  side.liquiditySweep = sl2.value < sl1.value * 0.999;
+
+  side.iboActive = last.h > prev.h && last.l > prev.l;
+  side.structureShift = last.h > prev.h;
+  side.priceInZone = last.c >= side.qmlZoneLow && last.c <= side.qmlZoneHigh;
+
+  side.valid =
+    side.iboActive &&
+    side.pivotDetected &&
+    side.bos &&
+    side.liquiditySweep &&
+    side.structureShift &&
+    side.priceInZone;
+
+  return side;
 }

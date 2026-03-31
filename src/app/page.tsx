@@ -41,6 +41,7 @@ const STRATEGY_OPTIONS: { id: StrategyId; label: string }[] = [
   { id: "trend_following", label: "Trend Following" },
   { id: "breakout", label: "Breakout" },
   { id: "scalping", label: "Scalping" },
+  { id: "qml_ibo", label: "QML-IBO Reversal" },
 ];
 
 const INTERVAL_MINUTES = CHART_INTERVAL_OPTIONS.filter((o) => o.id.endsWith("m"));

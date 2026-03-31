@@ -12,7 +12,7 @@ import { buildIndicatorSnapshot } from "@/lib/snapshot";
 import { evaluateStrategy } from "@/lib/strategy";
 import type { MarketType, SignalResponse, StrategyId } from "@/lib/types";
 
-const STRATEGIES: StrategyId[] = ["hedging", "trend_following", "breakout", "scalping"];
+const STRATEGIES: StrategyId[] = ["hedging", "trend_following", "breakout", "scalping", "qml_ibo"];
 
 function isStrategy(s: string): s is StrategyId {
   return STRATEGIES.includes(s as StrategyId);

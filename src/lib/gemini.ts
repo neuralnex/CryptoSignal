@@ -17,6 +17,16 @@ BREAKOUT (${tf} chart): k_tp=2.2, k_sl=0.8. BUY if C > BB_upper and V > 1.2*aver
   scalping: (tf) => `
 SCALPING (${tf} chart): k_tp=0.4, k_sl=0.25. Require ATR14 > 0.01*C. BUY: RSI14<30 and MACD histogram crosses above 0. SELL: RSI14>70 and histogram crosses below 0.
 `.trim(),
+  qml_ibo: (tf) => `
+QML-IBO SMART LIQUIDITY REVERSAL (${tf} chart): k_tp=3.0, k_sl=1.0 → fixed 1:3 RR.
+Five conditions for SELL (bearish): (1) Internal Bearish Orderflow — last bar LH + LL vs prior bar;
+(2) Higher High (HH) detected above previous swing high (liquidity sweep ≥ 0.1%);
+(3) QML zone = candle range of swing-low origin before HH (± 0.15*ATR buffer);
+(4) Break of Structure down — any post-HH low < origin swing-low value;
+(5) Current close inside QML zone.
+BUY (bullish mirror): same logic inverted — Lower Low sweeps previous swing low, QML zone = swing-high origin, BOS up.
+TP = entry ± k_tp*ATR14, SL = entry ∓ k_sl*ATR14 (R = 1*ATR, target = 3*ATR → 1:3 RR).
+`.trim(),
 };
 
 function extractJsonObject(text: string): string {

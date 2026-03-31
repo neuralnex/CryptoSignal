@@ -9,7 +9,7 @@ export interface OHLCV {
   v: number;
 }
 
-export type StrategyId = "hedging" | "trend_following" | "breakout" | "scalping";
+export type StrategyId = "hedging" | "trend_following" | "breakout" | "scalping" | "qml_ibo";
 
 export type MarketType = "spot" | "futures";
 
@@ -36,6 +36,27 @@ export interface IndicatorSnapshot {
   bbMid: number;
   bbLow: number;
   avgVolume20: number;
+  qmlIbo?: QmlIboAnalysis;
+}
+
+export interface QmlSideAnalysis {
+  iboActive: boolean;
+  pivotDetected: boolean;
+  pivotLevel: number;
+  qmlZoneHigh: number;
+  qmlZoneLow: number;
+  bos: boolean;
+  liquiditySweep: boolean;
+  structureShift: boolean;
+  priceInZone: boolean;
+  valid: boolean;
+}
+
+export interface QmlIboAnalysis {
+  swingHighCount: number;
+  swingLowCount: number;
+  bearish: QmlSideAnalysis;
+  bullish: QmlSideAnalysis;
 }
 
 export interface MechanicalSignal {

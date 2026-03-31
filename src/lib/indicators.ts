@@ -125,3 +125,40 @@ export function averageVolume(volumes: number[], bars: number): number {
   for (let i = volumes.length - n; i < volumes.length; i++) s += volumes[i];
   return s / n;
 }
+
+export interface SwingPoint {
+  idx: number;
+  value: number;
+}
+
+/** 5-bar fractal swing highs (lookback bars each side). */
+export function findSwingHighs(ohlcv: OHLCV[], lookback = 2): SwingPoint[] {
+  const swings: SwingPoint[] = [];
+  for (let i = lookback; i < ohlcv.length - lookback; i++) {
+    let ok = true;
+    for (let j = 1; j <= lookback; j++) {
+      if (ohlcv[i].h <= ohlcv[i - j].h || ohlcv[i].h <= ohlcv[i + j].h) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) swings.push({ idx: i, value: ohlcv[i].h });
+  }
+  return swings;
+}
+
+/** 5-bar fractal swing lows (lookback bars each side). */
+export function findSwingLows(ohlcv: OHLCV[], lookback = 2): SwingPoint[] {
+  const swings: SwingPoint[] = [];
+  for (let i = lookback; i < ohlcv.length - lookback; i++) {
+    let ok = true;
+    for (let j = 1; j <= lookback; j++) {
+      if (ohlcv[i].l >= ohlcv[i - j].l || ohlcv[i].l >= ohlcv[i + j].l) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) swings.push({ idx: i, value: ohlcv[i].l });
+  }
+  return swings;
+}

@@ -44,6 +44,13 @@ export const strategyWriteups: Record<
     risk: "Very high",
     idealFor: "Advanced traders only",
   },
+  qml_ibo: {
+    title: "QML-IBO Smart Liquidity Reversal",
+    body: `A precision reversal model rooted in Smart Money Concepts. It scans for a Quasimodo Level (QML) formed after a liquidity sweep above a previous swing high (or below a previous swing low), confirms an internal orderflow shift and a break of structure, then signals an entry only when price retraces into the QML origin zone. Risk-reward is fixed at 1:3.`,
+    bestFor: "Reversals after liquidity grabs",
+    risk: "High",
+    idealFor: "Advanced / SMC traders",
+  },
 };
 
 export const indicatorGuide = [

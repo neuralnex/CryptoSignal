@@ -5,6 +5,7 @@ const STRATEGY_KP: Record<StrategyId, { kTp: number; kSl: number }> = {
   trend_following: { kTp: 1.8, kSl: 1.0 },
   breakout: { kTp: 2.2, kSl: 0.8 },
   scalping: { kTp: 0.4, kSl: 0.25 },
+  qml_ibo: { kTp: 3.0, kSl: 1.0 },
 };
 
 function leverageFor(strategy: StrategyId, market: MarketType): string {
@@ -20,6 +21,8 @@ function leverageFor(strategy: StrategyId, market: MarketType): string {
       return "Futures: 5–8× only if you accept gap risk and tight monitoring.";
     case "scalping":
       return "Futures: 10–20× is extremely risky; many traders lose fast at this tier.";
+    case "qml_ibo":
+      return "Futures: 3–5× recommended for reversal setups; counter-trend entries carry added risk.";
     default:
       return "";
   }
@@ -148,6 +151,44 @@ export function evaluateStrategy(
       }
       return mkHold({
         note: "Scalp setup needs RSI extreme plus a fresh MACD histogram zero cross.",
+      });
+    }
+    case "qml_ibo": {
+      const qml = s.qmlIbo;
+      if (!qml) return mkHold({ note: "QML-IBO structural data not available." });
+
+      checks.swing_highs = qml.swingHighCount;
+      checks.swing_lows = qml.swingLowCount;
+
+      const { bearish, bullish } = qml;
+      checks.bear_ibo = bearish.iboActive;
+      checks.bear_hh = bearish.pivotDetected;
+      checks.bear_hh_level = bearish.pivotLevel;
+      checks.bear_bos_down = bearish.bos;
+      checks.bear_sweep = bearish.liquiditySweep;
+      checks.bear_shift = bearish.structureShift;
+      checks.bear_in_zone = bearish.priceInZone;
+      checks.bear_qml_zone = `${bearish.qmlZoneLow.toFixed(2)}–${bearish.qmlZoneHigh.toFixed(2)}`;
+
+      checks.bull_ibo = bullish.iboActive;
+      checks.bull_ll = bullish.pivotDetected;
+      checks.bull_ll_level = bullish.pivotLevel;
+      checks.bull_bos_up = bullish.bos;
+      checks.bull_sweep = bullish.liquiditySweep;
+      checks.bull_shift = bullish.structureShift;
+      checks.bull_in_zone = bullish.priceInZone;
+      checks.bull_qml_zone = `${bullish.qmlZoneLow.toFixed(2)}–${bullish.qmlZoneHigh.toFixed(2)}`;
+
+      if (bearish.valid && !bullish.valid) {
+        const { entry, tp, sl } = levelsFor("SELL", C, atr, kTp, kSl);
+        return { signal: "SELL", entry, tp, sl, kTp, kSl, leverageHint, checks };
+      }
+      if (bullish.valid && !bearish.valid) {
+        const { entry, tp, sl } = levelsFor("BUY", C, atr, kTp, kSl);
+        return { signal: "BUY", entry, tp, sl, kTp, kSl, leverageHint, checks };
+      }
+      return mkHold({
+        note: "QML-IBO requires all five conditions (internal orderflow + liquidity sweep + QML zone + BOS + structure shift). No valid setup detected.",
       });
     }
     default:
